@@ -4,24 +4,6 @@ Dotazy v tomto dokumentu jsou navrženy pro spuštění v prostředí `mongosh` 
 
 U většiny agregačních dotazů je použito nastavení `{ allowDiskUse: true }`, aby bylo možné bezpečně zpracovat i objemnější mezivýsledky při běhu nad většími kolekcemi.
 
-## Inicializační indexy
-
-Před spuštěním analytických dotazů jsou vytvořeny základní sekundární indexy nad často filtrovanými a propojovacími poli. Tyto indexy snižují náklady na vyhledávání a zlepšují výkon dotazů využívajících filtrování i běhové propojení kolekcí.
-
-    db.reviews.createIndex({ business_id: 1 })
-    db.reviews.createIndex({ user_id: 1 })
-    db.reviews.createIndex({ date: 1 })
-    db.reviews.createIndex({ stars: 1 })
-
-    db.businesses.createIndex({ business_id: 1 })
-    db.businesses.createIndex({ city: 1 })
-    db.businesses.createIndex({ state: 1 })
-    db.businesses.createIndex({ stars: 1 })
-    db.businesses.createIndex({ is_open: 1 })
-
-    db.users.createIndex({ user_id: 1 })
-
-
 ## 1. Agregační a analytické dotazy
 
 Dotazy v této části využívají agregační pipeline nad kolekcemi `businesses`, `reviews` a `users`. Zaměřují se na distribuční přehledy, časové trendy, odvozené metriky a základní analytické souhrny nad provozními daty Yelp datasetu.
