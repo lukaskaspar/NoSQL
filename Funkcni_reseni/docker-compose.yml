@@ -1,0 +1,409 @@
+services:
+  keyfile-init:
+    image: python:3.12-slim
+    container_name: mongo-keyfile-init
+    restart: "no"
+    volumes:
+      - mongo-secrets:/shared
+      - ./scripts:/scripts:ro
+    command: ["/bin/sh", "/scripts/generate-keyfile.sh"]
+    networks: [mongo-net]
+
+  cfg1:
+    image: mongo:8.2
+    container_name: cfg1
+    restart: unless-stopped
+    depends_on:
+      keyfile-init:
+        condition: service_completed_successfully
+    command: >
+      sh -lc "until [ -f /run/mongo-secrets/mongodb-keyfile ]; do sleep 1; done;
+      chmod 400 /run/mongo-secrets/mongodb-keyfile;
+      exec mongod --config /etc/mongo/mongod-csrs.conf"
+    volumes:
+      - ./config/mongod-csrs.conf:/etc/mongo/mongod-csrs.conf:ro
+      - mongo-secrets:/run/mongo-secrets
+      - cfg1_data:/data/db
+    networks: [mongo-net]
+
+  cfg2:
+    image: mongo:8.2
+    container_name: cfg2
+    restart: unless-stopped
+    depends_on:
+      keyfile-init:
+        condition: service_completed_successfully
+    command: >
+      sh -lc "until [ -f /run/mongo-secrets/mongodb-keyfile ]; do sleep 1; done;
+      chmod 400 /run/mongo-secrets/mongodb-keyfile;
+      exec mongod --config /etc/mongo/mongod-csrs.conf"
+    volumes:
+      - ./config/mongod-csrs.conf:/etc/mongo/mongod-csrs.conf:ro
+      - mongo-secrets:/run/mongo-secrets
+      - cfg2_data:/data/db
+    networks: [mongo-net]
+
+  cfg3:
+    image: mongo:8.2
+    container_name: cfg3
+    restart: unless-stopped
+    depends_on:
+      keyfile-init:
+        condition: service_completed_successfully
+    command: >
+      sh -lc "until [ -f /run/mongo-secrets/mongodb-keyfile ]; do sleep 1; done;
+      chmod 400 /run/mongo-secrets/mongodb-keyfile;
+      exec mongod --config /etc/mongo/mongod-csrs.conf"
+    volumes:
+      - ./config/mongod-csrs.conf:/etc/mongo/mongod-csrs.conf:ro
+      - mongo-secrets:/run/mongo-secrets
+      - cfg3_data:/data/db
+    networks: [mongo-net]
+
+  cfg-init:
+    image: mongo:8.2
+    container_name: cfg-init
+    restart: "no"
+    depends_on:
+      - cfg1
+      - cfg2
+      - cfg3
+    network_mode: service:cfg1
+    volumes:
+      - ./scripts:/scripts:ro
+    command: ["/bin/sh", "/scripts/init-csrs.sh"]
+
+  shard1a:
+    image: mongo:8.2
+    container_name: shard1a
+    restart: unless-stopped
+    depends_on:
+      keyfile-init:
+        condition: service_completed_successfully
+    command: >
+      sh -lc "until [ -f /run/mongo-secrets/mongodb-keyfile ]; do sleep 1; done;
+      chmod 400 /run/mongo-secrets/mongodb-keyfile;
+      exec mongod --config /etc/mongo/mongod-shard.conf --replSet shard01"
+    volumes:
+      - ./config/mongod-shard.conf:/etc/mongo/mongod-shard.conf:ro
+      - mongo-secrets:/run/mongo-secrets
+      - shard1a_data:/data/db
+    networks: [mongo-net]
+
+  shard1b:
+    image: mongo:8.2
+    container_name: shard1b
+    restart: unless-stopped
+    depends_on:
+      keyfile-init:
+        condition: service_completed_successfully
+    command: >
+      sh -lc "until [ -f /run/mongo-secrets/mongodb-keyfile ]; do sleep 1; done;
+      chmod 400 /run/mongo-secrets/mongodb-keyfile;
+      exec mongod --config /etc/mongo/mongod-shard.conf --replSet shard01"
+    volumes:
+      - ./config/mongod-shard.conf:/etc/mongo/mongod-shard.conf:ro
+      - mongo-secrets:/run/mongo-secrets
+      - shard1b_data:/data/db
+    networks: [mongo-net]
+
+  shard1c:
+    image: mongo:8.2
+    container_name: shard1c
+    restart: unless-stopped
+    depends_on:
+      keyfile-init:
+        condition: service_completed_successfully
+    command: >
+      sh -lc "until [ -f /run/mongo-secrets/mongodb-keyfile ]; do sleep 1; done;
+      chmod 400 /run/mongo-secrets/mongodb-keyfile;
+      exec mongod --config /etc/mongo/mongod-shard.conf --replSet shard01"
+    volumes:
+      - ./config/mongod-shard.conf:/etc/mongo/mongod-shard.conf:ro
+      - mongo-secrets:/run/mongo-secrets
+      - shard1c_data:/data/db
+    networks: [mongo-net]
+
+  shard1-init:
+    image: mongo:8.2
+    container_name: shard1-init
+    restart: "no"
+    depends_on:
+      - shard1a
+      - shard1b
+      - shard1c
+    environment:
+      RS_NAME: shard01
+      RS_PORT: "27018"
+      RS_MEMBERS: shard1a:27018,shard1b:27018,shard1c:27018
+    network_mode: service:shard1a
+    volumes:
+      - ./scripts:/scripts:ro
+    command: ["/bin/sh", "/scripts/init-shard-rs.sh"]
+
+  shard2a:
+    image: mongo:8.2
+    container_name: shard2a
+    restart: unless-stopped
+    depends_on:
+      keyfile-init:
+        condition: service_completed_successfully
+    command: >
+      sh -lc "until [ -f /run/mongo-secrets/mongodb-keyfile ]; do sleep 1; done;
+      chmod 400 /run/mongo-secrets/mongodb-keyfile;
+      exec mongod --config /etc/mongo/mongod-shard.conf --replSet shard02"
+    volumes:
+      - ./config/mongod-shard.conf:/etc/mongo/mongod-shard.conf:ro
+      - mongo-secrets:/run/mongo-secrets
+      - shard2a_data:/data/db
+    networks: [mongo-net]
+
+  shard2b:
+    image: mongo:8.2
+    container_name: shard2b
+    restart: unless-stopped
+    depends_on:
+      keyfile-init:
+        condition: service_completed_successfully
+    command: >
+      sh -lc "until [ -f /run/mongo-secrets/mongodb-keyfile ]; do sleep 1; done;
+      chmod 400 /run/mongo-secrets/mongodb-keyfile;
+      exec mongod --config /etc/mongo/mongod-shard.conf --replSet shard02"
+    volumes:
+      - ./config/mongod-shard.conf:/etc/mongo/mongod-shard.conf:ro
+      - mongo-secrets:/run/mongo-secrets
+      - shard2b_data:/data/db
+    networks: [mongo-net]
+
+  shard2c:
+    image: mongo:8.2
+    container_name: shard2c
+    restart: unless-stopped
+    depends_on:
+      keyfile-init:
+        condition: service_completed_successfully
+    command: >
+      sh -lc "until [ -f /run/mongo-secrets/mongodb-keyfile ]; do sleep 1; done;
+      chmod 400 /run/mongo-secrets/mongodb-keyfile;
+      exec mongod --config /etc/mongo/mongod-shard.conf --replSet shard02"
+    volumes:
+      - ./config/mongod-shard.conf:/etc/mongo/mongod-shard.conf:ro
+      - mongo-secrets:/run/mongo-secrets
+      - shard2c_data:/data/db
+    networks: [mongo-net]
+
+  shard2-init:
+    image: mongo:8.2
+    container_name: shard2-init
+    restart: "no"
+    depends_on:
+      - shard2a
+      - shard2b
+      - shard2c
+    environment:
+      RS_NAME: shard02
+      RS_PORT: "27018"
+      RS_MEMBERS: shard2a:27018,shard2b:27018,shard2c:27018
+    network_mode: service:shard2a
+    volumes:
+      - ./scripts:/scripts:ro
+    command: ["/bin/sh", "/scripts/init-shard-rs.sh"]
+
+  shard3a:
+    image: mongo:8.2
+    container_name: shard3a
+    restart: unless-stopped
+    depends_on:
+      keyfile-init:
+        condition: service_completed_successfully
+    command: >
+      sh -lc "until [ -f /run/mongo-secrets/mongodb-keyfile ]; do sleep 1; done;
+      chmod 400 /run/mongo-secrets/mongodb-keyfile;
+      exec mongod --config /etc/mongo/mongod-shard.conf --replSet shard03"
+    volumes:
+      - ./config/mongod-shard.conf:/etc/mongo/mongod-shard.conf:ro
+      - mongo-secrets:/run/mongo-secrets
+      - shard3a_data:/data/db
+    networks: [mongo-net]
+
+  shard3b:
+    image: mongo:8.2
+    container_name: shard3b
+    restart: unless-stopped
+    depends_on:
+      keyfile-init:
+        condition: service_completed_successfully
+    command: >
+      sh -lc "until [ -f /run/mongo-secrets/mongodb-keyfile ]; do sleep 1; done;
+      chmod 400 /run/mongo-secrets/mongodb-keyfile;
+      exec mongod --config /etc/mongo/mongod-shard.conf --replSet shard03"
+    volumes:
+      - ./config/mongod-shard.conf:/etc/mongo/mongod-shard.conf:ro
+      - mongo-secrets:/run/mongo-secrets
+      - shard3b_data:/data/db
+    networks: [mongo-net]
+
+  shard3c:
+    image: mongo:8.2
+    container_name: shard3c
+    restart: unless-stopped
+    depends_on:
+      keyfile-init:
+        condition: service_completed_successfully
+    command: >
+      sh -lc "until [ -f /run/mongo-secrets/mongodb-keyfile ]; do sleep 1; done;
+      chmod 400 /run/mongo-secrets/mongodb-keyfile;
+      exec mongod --config /etc/mongo/mongod-shard.conf --replSet shard03"
+    volumes:
+      - ./config/mongod-shard.conf:/etc/mongo/mongod-shard.conf:ro
+      - mongo-secrets:/run/mongo-secrets
+      - shard3c_data:/data/db
+    networks: [mongo-net]
+
+  shard3-init:
+    image: mongo:8.2
+    container_name: shard3-init
+    restart: "no"
+    depends_on:
+      - shard3a
+      - shard3b
+      - shard3c
+    environment:
+      RS_NAME: shard03
+      RS_PORT: "27018"
+      RS_MEMBERS: shard3a:27018,shard3b:27018,shard3c:27018
+    network_mode: service:shard3a
+    volumes:
+      - ./scripts:/scripts:ro
+    command: ["/bin/sh", "/scripts/init-shard-rs.sh"]
+
+  mongos:
+    image: mongo:8.2
+    container_name: mongos
+    restart: unless-stopped
+    depends_on:
+      cfg-init:
+        condition: service_completed_successfully
+      keyfile-init:
+        condition: service_completed_successfully
+    command: >
+      sh -lc "until [ -f /run/mongo-secrets/mongodb-keyfile ]; do sleep 1; done;
+      chmod 400 /run/mongo-secrets/mongodb-keyfile;
+      exec mongos --config /etc/mongo/mongos.conf"
+    volumes:
+      - ./config/mongos.conf:/etc/mongo/mongos.conf:ro
+      - mongo-secrets:/run/mongo-secrets
+    ports:
+      - "27017:27017"
+    networks: [mongo-net]
+
+  cluster-bootstrap:
+    image: mongo:8.2
+    container_name: cluster-bootstrap
+    restart: "no"
+    depends_on:
+      - mongos
+      - shard1-init
+      - shard2-init
+      - shard3-init
+    environment:
+      MONGO_ROOT_USERNAME: ${MONGO_ROOT_USERNAME}
+      MONGO_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+    network_mode: service:mongos
+    volumes:
+      - ./scripts:/scripts:ro
+    command: ["/bin/sh", "/scripts/bootstrap-cluster-local.sh"]
+
+  cluster-schema:
+    image: mongo:8.2
+    container_name: cluster-schema
+    restart: "no"
+    depends_on:
+      cluster-bootstrap:
+        condition: service_completed_successfully
+    env_file:
+      - .env
+    network_mode: service:mongos
+    volumes:
+      - ./scripts:/scripts:ro
+    command: ["/bin/sh", "/scripts/configure-cluster-schema.sh"]
+
+  yelp-import:
+    build:
+      context: .
+      dockerfile: ./docker/mongo-tools/Dockerfile
+    container_name: yelp-import
+    restart: "no"
+    depends_on:
+      cluster-schema:
+        condition: service_completed_successfully
+    env_file:
+      - .env
+    volumes:
+      - ../Data:/import-data:ro
+      - ./scripts:/scripts:ro
+    networks: [mongo-net]
+    command: ["/bin/sh", "/scripts/import-yelp.sh"]
+
+  yelp-normalize:
+    image: mongo:8.2
+    container_name: yelp-normalize
+    restart: "no"
+    depends_on:
+      yelp-import:
+        condition: service_completed_successfully
+    env_file:
+      - .env
+    volumes:
+      - ./scripts:/scripts:ro
+    networks: [mongo-net]
+    command: ["/bin/sh", "/scripts/normalize-yelp.sh"]
+
+  cluster-indexes:
+    image: mongo:8.2
+    container_name: cluster-indexes
+    restart: "no"
+    depends_on:
+      yelp-normalize:
+        condition: service_completed_successfully
+    env_file:
+      - .env
+    network_mode: service:mongos
+    volumes:
+      - ./scripts:/scripts:ro
+    command: ["/bin/sh", "/scripts/create-indexes.sh"]
+
+  compass-web:
+    image: haohanyang/compass-web:0.3.1
+    container_name: compass-web
+    restart: unless-stopped
+    depends_on:
+      cluster-schema:
+        condition: service_completed_successfully
+    environment:
+      CW_MONGO_URI: mongodb://${MONGO_ROOT_USERNAME}:${MONGO_ROOT_PASSWORD}@mongos:27017/admin?authSource=admin&name=YelpCluster
+      CW_ENABLE_EDIT_CONNECTIONS: "true"
+      CW_PORT: "8080"
+      CW_HOST: 0.0.0.0
+    ports:
+      - "8081:8080"
+    networks: [mongo-net]
+
+volumes:
+  mongo-secrets:
+  cfg1_data:
+  cfg2_data:
+  cfg3_data:
+  shard1a_data:
+  shard1b_data:
+  shard1c_data:
+  shard2a_data:
+  shard2b_data:
+  shard2c_data:
+  shard3a_data:
+  shard3b_data:
+  shard3c_data:
+
+networks:
+  mongo-net:
+    driver: bridge
